@@ -24,12 +24,12 @@
       <h2 class="card-heading" id="notices-heading"><span class="heading-label"><span aria-hidden="true">▣</span><span data-ja="お知らせ" data-en="Notices" data-zh="通知">お知らせ</span></span><span class="notice-counts"><span><b id="unreadCount">0</b> <span data-ja="未読" data-en="unread" data-zh="未读">未読</span></span><span><b id="readCount">0</b> <span data-ja="既読" data-en="read" data-zh="已读">既読</span></span></span></h2>
       <div class="notice-list" id="noticeList">
         {% for notice in resident_notices %}
-        <article class="notice-row" data-read="{{ 'true' if notice.get('read', false) else 'false' }}"><span class="notice-label">{{ '既読' if notice.get('read', false) else '未読' }}</span><div><p>{{ notice.get('content', '') }}</p>{% if notice.get('shelter') %}<small>（避難先: {{ notice.get('shelter') }}）</small>{% endif %}</div></article>
+        <a class="notice-row" href="{{ url_for('notification_detail', instruction_id=notice.get('id')) }}" data-read="{{ 'true' if notice.get('read', false) else 'false' }}"><span class="notice-label">{{ '既読' if notice.get('read', false) else '未読' }}</span><div><p>{{ notice.get('content', '') }}</p>{% if notice.get('shelter') %}<small>（避難先: {{ notice.get('shelter') }}）</small>{% endif %}</div></a>
         {% else %}
         <p class="empty-notices" data-ja="現在、お知らせはありません。" data-en="There are currently no notices." data-zh="目前没有通知。">現在、お知らせはありません。</p>
         {% endfor %}
       </div>
-      <a class="home-action" id="viewAllNotices" href="{{ url_for('board') }}" data-ja="お知らせを全て見る" data-en="View all notices" data-zh="查看全部通知">お知らせを全て見る</a>
+      <a class="home-action" id="viewAllNotices" href="{{ url_for('notification_list') }}" data-ja="お知らせを全て見る" data-en="View all notices" data-zh="查看全部通知">お知らせを全て見る</a>
     </section>
   </div>
 </div>
@@ -61,6 +61,9 @@
   .notice-counts span:last-child b { color: #667085; }
   .notice-list { display: grid; gap: 8px; }
   .notice-row { display: flex; gap: 10px; padding: 12px; border: 1px solid #e5eaf1; border-radius: 5px; background: #fff; }
+  .notice-row { color: inherit; text-decoration: none; }
+  .notice-row:hover, .notice-row:focus-visible { border-color: #9ebbe5; background: #f7fbff; }
+  .notice-row:focus-visible { outline: 3px solid rgba(40, 91, 171, .2); outline-offset: 2px; }
   .notice-label { flex: 0 0 auto; color: #c43e3e; font-size: 12px; font-weight: 800; }
   .notice-row[data-read="true"] .notice-label { color: #667085; }
   .notice-row p { margin: 0 0 4px; color: #233b68; line-height: 1.5; }
@@ -89,9 +92,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateWeather() {
     fetch('/api/weather_warnings').then(function (response) { return response.json(); }).then(function (data) {
       const english = window.bousaiLanguage === 'en'; const chinese = window.bousaiLanguage === 'zh';
-      const warningItems = (data.warnings || []).map(function (warning) { return '<li>' + warning.name + '（' + warning.status + '）</li>'; }).join('');
+      const warningItems = (data.warnings || []).map(function (warning) { const warningName = window.translateText('warning.' + warning.code); const status = english ? (warning.status === '発表' ? 'Issued' : 'Continuing') : chinese ? (warning.status === '発表' ? '发布' : '持续') : warning.status; return '<li>' + warningName + '（' + status + '）</li>'; }).join('');
       const status = data.error ? '<p class="weather-error">' + (english ? 'Failed to load weather information.' : chinese ? '气象信息获取失败。' : '気象情報の取得に失敗しました') + '</p>' : warningItems ? '<ul class="weather-status has-warning">' + warningItems + '</ul>' : '<p class="weather-status">✓ ' + (english ? 'No warnings or advisories are currently active.' : chinese ? '目前没有发布警报或注意报。' : '現在、警報・注意報は発表されていません') + '</p>';
-      document.getElementById('weatherContent').innerHTML = '<p class="weather-location">対象地域: ' + (data.area_name || '青森市') + '</p>' + status + '<p class="weather-meta">データ取得時刻: ' + (data.last_fetch_time || '不明') + '</p><p class="weather-meta">気象庁発表時刻: ' + (data.report_time || '不明') + '</p>';
+      const areaLabel = english ? 'Area: ' : chinese ? '地区：' : '対象地域: ';
+      const updatedLabel = english ? 'Fetched: ' : chinese ? '获取时间：' : 'データ取得時刻: ';
+      const reportLabel = english ? 'JMA report time: ' : chinese ? '气象厅发布时间：' : '気象庁発表時刻: ';
+      const unknown = english ? 'Unknown' : chinese ? '未知' : '不明';
+      document.getElementById('weatherContent').innerHTML = '<p class="weather-location">' + areaLabel + (data.area_name || '青森市') + '</p>' + status + '<p class="weather-meta">' + updatedLabel + (data.last_fetch_time || unknown) + '</p><p class="weather-meta">' + reportLabel + (data.report_time || unknown) + '</p>';
     }).catch(function () { document.getElementById('weatherContent').innerHTML = '<p class="weather-error">気象情報の取得に失敗しました</p>'; });
   }
   updateWeather(); window.addEventListener('languagechange', updateWeather); setInterval(updateWeather, 600000);

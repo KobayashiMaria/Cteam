@@ -58,16 +58,16 @@
 
 <div class="board-page">
   <section class="board-section" aria-labelledby="status-heading">
-    <h1 id="status-heading">現在の状況</h1>
+    <h1 id="status-heading" data-ja="現在の状況" data-en="Current status" data-zh="当前状态">現在の状況</h1>
     <div class="board-stats" aria-live="polite">
-      <div class="board-stat">対応中 <strong>{{ counts.draft }}件</strong></div>
-      <div class="board-stat">発信済 <strong>{{ counts.published }}件</strong></div>
-      <div class="board-stat">本日発信 <strong>{{ counts.today }}件</strong></div>
+      <div class="board-stat"><span data-ja="対応中" data-en="In progress" data-zh="处理中">対応中</span> <strong>{{ counts.draft }}件</strong></div>
+      <div class="board-stat"><span data-ja="発信済" data-en="Published" data-zh="已发布">発信済</span> <strong>{{ counts.published }}件</strong></div>
+      <div class="board-stat"><span data-ja="本日発信" data-en="Published today" data-zh="今日发布">本日発信</span> <strong>{{ counts.today }}件</strong></div>
     </div>
   </section>
 
   <section class="board-section" aria-labelledby="new-heading">
-    <h2 id="new-heading">新規 指示・発信</h2>
+    <h2 id="new-heading" data-ja="新規 指示・発信" data-en="New instruction or message" data-zh="新建指示或信息">新規 指示・発信</h2>
     <div class="board-layout">
       <div>
         {% if error %}<p class="board-error" role="alert">{{ error }}</p>{% endif %}
@@ -77,7 +77,7 @@
             <label for="disaster">災害名 <span class="required">＊</span></label>
             <select id="disaster" name="disaster">
               <option value="">選択してください</option>
-              {% for option in disasters %}<option value="{{ option }}" {% if form_data.disaster == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+              {% for option in disasters %}<option value="{{ option }}" data-translate-key="board.{{ option }}" {% if form_data.disaster == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
             </select>
           </div>
           <div class="board-field">
@@ -92,11 +92,11 @@
             <label for="shelter_id">関連する避難所 <span class="required">＊</span></label>
             <select id="shelter_id" name="shelter_id"><option value="">選択してください</option>{% for shelter_id, shelter_name in shelters %}<option value="{{ shelter_id }}" {% if form_data.shelter_id|string == shelter_id %}selected{% endif %}>{{ shelter_name }}</option>{% endfor %}</select>
           </div>
-          <fieldset class="board-field board-fieldset"><legend>種類 <span class="required">＊</span></legend><div class="board-options">{% for option in message_types %}<label><input type="radio" name="message_type" value="{{ option }}" {% if form_data.message_type == option %}checked{% endif %}>{{ option }}</label>{% endfor %}</div></fieldset>
+          <fieldset class="board-field board-fieldset"><legend data-ja="種類" data-en="Type" data-zh="类型">種類 <span class="required">＊</span></legend><div class="board-options">{% for option in message_types %}<label><input type="radio" name="message_type" value="{{ option }}" {% if form_data.message_type == option %}checked{% endif %}><span data-translate-key="message.{{ option }}">{{ option }}</span></label>{% endfor %}</div></fieldset>
           <fieldset class="board-field board-fieldset audience-field" id="audienceField" {% if form_data.message_type != '住民への情報発信' %}hidden{% endif %}>
-            <legend>対象者 <span class="required">＊</span></legend><div class="board-options">{% for option in targets %}<label><input type="checkbox" name="target_audience" value="{{ option }}" {% if option in (form_data.target_audience or []) %}checked{% endif %}>{{ option }}</label>{% endfor %}</div>
+            <legend data-ja="対象者" data-en="Audience" data-zh="对象">対象者 <span class="required">＊</span></legend><div class="board-options">{% for option in targets %}<label><input type="checkbox" name="target_audience" value="{{ option }}" {% if option in (form_data.target_audience or []) %}checked{% endif %}><span data-translate-key="target.{{ option }}">{{ option }}</span></label>{% endfor %}</div>
           </fieldset>
-          <fieldset class="board-field board-fieldset"><legend>優先度 <span class="required">＊</span></legend><div class="board-options">{% for option in priorities %}<label><input type="radio" name="priority" value="{{ option }}" {% if (form_data.priority or '通常') == option %}checked{% endif %}>{{ option }}</label>{% endfor %}</div></fieldset>
+          <fieldset class="board-field board-fieldset"><legend data-ja="優先度" data-en="Priority" data-zh="优先级">優先度 <span class="required">＊</span></legend><div class="board-options">{% for option in priorities %}<label><input type="radio" name="priority" value="{{ option }}" {% if (form_data.priority or '通常') == option %}checked{% endif %}><span data-translate-key="priority.{{ option }}">{{ option }}</span></label>{% endfor %}</div></fieldset>
           <div class="board-actions"><button class="board-button secondary" type="submit" name="action" value="draft">下書き保存</button><button class="board-button" type="submit" name="action" value="publish">指示・発信する</button></div>
         </form>
       </div>
@@ -105,9 +105,29 @@
   </section>
 
   <section class="board-section" aria-labelledby="list-heading">
-    <h2 id="list-heading">指示・発信一覧</h2>
-    <div class="board-filters"><label for="filterDisaster">災害別<select id="filterDisaster"><option value="">すべて</option>{% for option in disasters %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label><label for="filterPriority">優先度別<select id="filterPriority"><option value="">すべて</option>{% for option in priorities %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label><label for="filterTarget">対象者別<select id="filterTarget"><option value="">すべて</option>{% for option in targets %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label></div>
-    <div class="table-scroll"><table class="board-table"><thead><tr><th>災害名</th><th>種類</th><th>対象</th><th>内容</th><th>表示期限</th><th>関連する避難所</th><th>優先度</th><th>状態</th><th>操作</th></tr></thead><tbody id="instructionRows">{% for inst in instructions %}<tr data-disaster="{{ inst.disaster }}" data-priority="{{ inst.priority }}" data-targets="{{ (inst.target_audience or [])|join('|') }}"><td>{{ inst.disaster or '―' }}</td><td>{{ inst.message_type or '―' }}</td><td>{{ (inst.target_audience or [])|join('、') if inst.message_type == '住民への情報発信' else '' }}</td><td class="content-cell">{{ inst.content }}</td><td>{{ inst.display_until|replace('T', ' ') if inst.display_until else '―' }}</td><td>{{ inst.shelter or '―' }}</td><td class="priority-{{ inst.priority }}">{{ inst.priority or '―' }}</td><td>{{ inst.state or '―' }}</td><td><a class="text-button" href="{{ url_for('board', edit_id=inst.id) }}">編集</a><form method="post" action="{{ url_for('board_delete', instruction_id=inst.id) }}" onsubmit="return confirm('この指示・発信を削除しますか？');"><button class="text-button" type="submit">削除</button></form></td></tr>{% endfor %}</tbody></table></div><p id="noMatches" class="board-empty" {% if instructions %}hidden{% endif %}>条件に一致する指示・発信はありません。</p>
+    <h2 id="list-heading" data-ja="指示・発信一覧" data-en="Instructions and messages" data-zh="指示和信息列表">指示・発信一覧</h2>
+    <div class="board-filters"><label for="filterDisaster" data-ja="災害別" data-en="Disaster" data-zh="灾害"><select id="filterDisaster"><option value="" data-ja="すべて" data-en="All" data-zh="全部">すべて</option>{% for option in disasters %}<option value="{{ option }}" data-translate-key="board.{{ option }}">{{ option }}</option>{% endfor %}</select></label><label for="filterPriority" data-ja="優先度別" data-en="Priority" data-zh="优先级"><select id="filterPriority"><option value="" data-ja="すべて" data-en="All" data-zh="全部">すべて</option>{% for option in priorities %}<option value="{{ option }}" data-translate-key="priority.{{ option }}">{{ option }}</option>{% endfor %}</select></label><label for="filterTarget" data-ja="対象者別" data-en="Audience" data-zh="对象"><select id="filterTarget"><option value="" data-ja="すべて" data-en="All" data-zh="全部">すべて</option>{% for option in targets %}<option value="{{ option }}" data-translate-key="target.{{ option }}">{{ option }}</option>{% endfor %}</select></label></div>
+    <div class="table-scroll">
+      <table class="board-table">
+        <thead><tr><th data-ja="災害名" data-en="Disaster" data-zh="灾害名称">災害名</th><th data-ja="種類" data-en="Type" data-zh="类型">種類</th><th data-ja="対象" data-en="Audience" data-zh="对象">対象</th><th data-ja="内容" data-en="Content" data-zh="内容">内容</th><th data-ja="表示期限" data-en="Display until" data-zh="显示期限">表示期限</th><th data-ja="関連する避難所" data-en="Related shelter" data-zh="相关避难所">関連する避難所</th><th data-ja="優先度" data-en="Priority" data-zh="优先级">優先度</th><th data-ja="状態" data-en="Status" data-zh="状态">状態</th><th data-ja="操作" data-en="Actions" data-zh="操作">操作</th></tr></thead>
+        <tbody id="instructionRows">
+        {% for inst in instructions %}
+          <tr data-disaster="{{ inst.disaster }}" data-priority="{{ inst.priority }}" data-targets="{{ inst.target_audience|join("|") }}">
+            <td data-translate-key="board.{{ inst.disaster }}">{{ inst.disaster }}</td>
+            <td data-translate-key="message.{{ inst.message_type }}">{{ inst.message_type }}</td>
+            <td>{% if inst.message_type == "住民への情報発信" %}{% for target in inst.target_audience %}<span data-translate-key="target.{{ target }}">{{ target }}</span>{% if not loop.last %}、{% endif %}{% endfor %}{% endif %}</td>
+            <td class="content-cell">{{ inst.content }}</td>
+            <td>{{ inst.display_until|replace("T", " ") if inst.display_until else "―" }}</td>
+            <td>{{ inst.shelter }}</td>
+            <td class="priority-{{ inst.priority }}" data-translate-key="priority.{{ inst.priority }}">{{ inst.priority }}</td>
+            <td>{{ inst.state }}</td>
+            <td><a class="text-button" href="{{ url_for('board', edit_id=inst.id) }}" data-ja="編集" data-en="Edit" data-zh="编辑">編集</a><form method="post" action="{{ url_for('board_delete', instruction_id=inst.id) }}" onsubmit="return confirm('この指示・発信を削除しますか？');"><button class="text-button" type="submit" data-ja="削除" data-en="Delete" data-zh="删除">削除</button></form></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p id="noMatches" class="board-empty" data-ja="条件に一致する指示・発信はありません。" data-en="No instructions or messages match the criteria." data-zh="没有符合条件的指示或信息。" {% if instructions %}hidden{% endif %}>条件に一致する指示・発信はありません。</p>
   </section>
 </div>
 <script>

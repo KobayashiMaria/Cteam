@@ -130,7 +130,7 @@
           <label for="facility_type" data-ja="施設区分" data-en="Facility type">施設区分</label>
           <select id="facility_type" name="facility_type">
             <option value="" data-ja="施設区分を選択" data-en="Select facility type">施設区分を選択</option>
-            {% for option in facility_type_options %}<option value="{{ option }}" {% if request.form.get('facility_type', current_values.get('facility_type', '')) == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+            {% for option in facility_type_options %}<option value="{{ option }}" data-translate-key="facility.{{ option }}" {% if request.form.get('facility_type', current_values.get('facility_type', '')) == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
           </select>
         </div>
         <div class="register-field">
@@ -189,7 +189,7 @@
         <fieldset class="register-field register-checks">
           <legend><span data-ja="災害対応区分" data-en="Disaster types">災害対応区分</span><span class="required">必須</span></legend>
           <div class="checkbox-list">
-            {% for option in disaster_type_options %}<label class="checkbox-label"><input type="checkbox" name="disaster_type" value="{{ option }}" {% if option in request.form.getlist('disaster_type') or (not request.form and option in current_values.get('disaster_type', [])) %}checked{% endif %}><span>{{ option }}</span></label>{% endfor %}
+            {% for option in disaster_type_options %}<label class="checkbox-label"><input type="checkbox" name="disaster_type" value="{{ option }}" {% if option in request.form.getlist('disaster_type') or (not request.form and option in current_values.get('disaster_type', [])) %}checked{% endif %}><span data-translate-key="disaster.{{ option }}">{{ option }}</span></label>{% endfor %}
           </div>
         </fieldset>
         <div class="confirm-area">

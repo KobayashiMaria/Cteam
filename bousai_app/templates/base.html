@@ -27,6 +27,7 @@
       font-size: 16px;
     }
 
+    body[data-font-size="small"] { zoom: .9; }
     body[data-font-size="large"] { zoom: 1.2; }
 
     .app-header {
@@ -64,11 +65,10 @@
     .menu-button svg { display: block; width: 27px; height: 27px; }
 
     .header-actions { display: flex; align-items: center; gap: 7px; }
-    .header-action, .font-size-button { min-height: 34px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, .32); border-radius: 5px; background: rgba(255, 255, 255, .95); color: #214b96; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
-    .header-action:hover, .font-size-button:hover { background: #e2f0fc; }
-    .header-action:focus-visible, .font-size-button:focus-visible, .menu-button:focus-visible { outline: 3px solid #f9d36a; outline-offset: 2px; }
+    .header-action { min-height: 34px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, .32); border-radius: 5px; background: rgba(255, 255, 255, .95); color: #214b96; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .header-action:hover { background: #e2f0fc; }
+    .header-action:focus-visible, .header-setting select:focus-visible, .menu-button:focus-visible { outline: 3px solid #f9d36a; outline-offset: 2px; }
     .header-status { color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; }
-    .font-size-button[aria-pressed="true"] { background: #e2f0fc; }
     .header-setting { display: flex; align-items: center; gap: 5px; color: #fff; font-size: 12px; font-weight: 700; }
     .header-setting select { min-width: 92px; padding: 7px 24px 7px 8px; border: 1px solid rgba(255, 255, 255, .4); border-radius: 6px; background: rgba(255, 255, 255, .14); color: #fff; font: inherit; cursor: pointer; }
     .header-setting select option { background: #fff; color: #35445a; }
@@ -218,7 +218,7 @@
       .header-actions { gap: 3px; }
       .header-setting { gap: 2px; font-size: 10px; }
       .header-setting select { min-width: 68px; padding: 6px 16px 6px 5px; font-size: 11px; }
-      .header-action, .font-size-button { min-height: 30px; padding: 5px 6px; font-size: 10px; }
+      .header-action { min-height: 30px; padding: 5px 6px; font-size: 10px; }
       .header-status { font-size: 10px; }
       .menu-button { padding: 6px 3px 6px 5px; }
       .main-nav { top: 56px; right: 14px; }
@@ -243,7 +243,7 @@
 <body>
   <header class="app-header">
     <div class="header-inner">
-      <a class="brand" href="/" data-ja="防災アプリ" data-en="Disaster App">防災アプリ</a>
+      <a class="brand" href="/" data-ja="防災アプリ" data-en="Disaster App" data-zh="防灾应用">防災アプリ</a>
       <div class="header-actions">
         {% if session.logged_in %}
           <a class="header-action" href="{{ url_for('logout') }}" data-ja="ログアウト" data-en="Log out" data-zh="登出">ログアウト</a>
@@ -251,7 +251,14 @@
         {% else %}
           <span class="header-status" data-ja="未ログイン" data-en="Not logged in" data-zh="未登录">未ログイン</span>
         {% endif %}
-        <button class="font-size-button" type="button" id="fontSizeButton" aria-pressed="false" data-ja="文字の大きさ" data-en="Text size" data-zh="文字大小">文字の大きさ</button>
+        <label class="header-setting">
+          <span data-ja="文字サイズ" data-en="Text size" data-zh="文字大小">文字サイズ</span>
+          <select id="fontSizeSelect" aria-label="文字サイズ">
+            <option value="small" data-ja="小" data-en="Small" data-zh="小">小</option>
+            <option value="normal" data-ja="中" data-en="Medium" data-zh="中">中</option>
+            <option value="large" data-ja="大" data-en="Large" data-zh="大">大</option>
+          </select>
+        </label>
         <label class="header-setting">
           <span data-ja="言語" data-en="Language" data-zh="语言">言語</span>
           <select id="languageSelect" aria-label="言語">
@@ -293,10 +300,14 @@
       window.bousaiLanguage = language;
       document.documentElement.lang = language;
       document.querySelectorAll('[data-ja][data-en]').forEach((element) => {
-        element.textContent = element.dataset[language] || element.dataset.en;
+        element.textContent = element.dataset[language] || element.dataset.en || element.dataset.ja;
+      });
+      document.querySelectorAll('[data-translate-key]').forEach((element) => {
+        element.textContent = window.translateText(element.dataset.translateKey);
       });
       document.querySelectorAll('[data-placeholder-ja][data-placeholder-en]').forEach((element) => {
-        element.placeholder = element.dataset[`placeholder${language === 'ja' ? 'Ja' : 'En'}`];
+        const placeholderKey = language === 'ja' ? 'placeholderJa' : language === 'zh' ? 'placeholderZh' : 'placeholderEn';
+        element.placeholder = element.dataset[placeholderKey] || element.dataset.placeholderEn;
       });
       document.querySelectorAll('[data-shelter-name]').forEach((element) => {
         element.textContent = window.translateShelterName(element.dataset.shelterName);
@@ -309,6 +320,80 @@
       window.dispatchEvent(new Event('languagechange'));
     }
 
+    const translations = {
+      'facility.指定避難所': {en: 'Designated shelter', zh: '指定避难所'},
+      'facility.一時避難所': {en: 'Temporary shelter', zh: '临时避难所'},
+      'facility.福祉避難所': {en: 'Welfare shelter', zh: '福利避难所'},
+      'facility.防災倉庫': {en: 'Disaster prevention warehouse', zh: '防灾仓库'},
+      'facility.物資集積所': {en: 'Supply depot', zh: '物资集散处'},
+      'facility.その他': {en: 'Other', zh: '其他'},
+      'disaster.津波': {en: 'Tsunami', zh: '海啸'},
+      'disaster.地震': {en: 'Earthquake', zh: '地震'},
+      'disaster.洪水': {en: 'Flood', zh: '洪水'},
+      'congestion.混雑': {en: 'Crowded', zh: '拥挤'},
+      'congestion.やや混雑': {en: 'Somewhat crowded', zh: '较拥挤'},
+      'congestion.空き': {en: 'Available', zh: '空闲'},
+      'warning.02': {en: 'Snowstorm warning', zh: '暴风雪警报'},
+      'warning.03': {en: 'Heavy rain warning', zh: '大雨警报'},
+      'warning.04': {en: '洪水警报', zh: '洪水警报'},
+      'warning.05': {en: 'Storm warning', zh: '暴风警报'},
+      'warning.06': {en: 'Heavy snow warning', zh: '大雪警报'},
+      'warning.07': {en: '波浪警报', zh: '海浪警报'},
+      'warning.08': {en: '高潮警报', zh: '高潮警报'},
+      'warning.09': {en: 'Landslide warning', zh: '泥石流警报'},
+      'warning.10': {en: 'Heavy rain advisory', zh: '大雨注意报'},
+      'warning.12': {en: 'Heavy snow advisory', zh: '大雪注意报'},
+      'warning.13': {en: 'Snowstorm advisory', zh: '风雪注意报'},
+      'warning.14': {en: 'Thunderstorm advisory', zh: '雷电注意报'},
+      'warning.15': {en: 'Strong wind advisory', zh: '强风注意报'},
+      'warning.16': {en: '波浪注意报', zh: '海浪注意报'},
+      'warning.17': {en: 'Snowmelt advisory', zh: '融雪注意报'},
+      'warning.18': {en: '洪水注意报', zh: '洪水注意报'},
+      'warning.19': {en: '高潮注意报', zh: '高潮注意报'},
+      'warning.20': {en: 'Dense fog advisory', zh: '浓雾注意报'},
+      'warning.21': {en: 'Dry air advisory', zh: '干燥注意报'},
+      'warning.22': {en: 'Avalanche advisory', zh: '雪崩注意报'},
+      'warning.23': {en: 'Low temperature advisory', zh: '低温注意报'},
+      'warning.24': {en: 'Frost advisory', zh: '霜冻注意报'},
+      'warning.25': {en: 'Icing advisory', zh: '结冰注意报'},
+      'warning.26': {en: 'Snow accretion advisory', zh: '积雪注意报'},
+      'warning.27': {en: 'Other advisory', zh: '其他注意报'},
+      'warning.29': {en: 'Landslide advisory', zh: '泥石流注意报'},
+      'warning.32': {en: 'Special snowstorm warning', zh: '暴风雪特别警报'},
+      'warning.33': {en: 'Special heavy rain warning', zh: '大雨特别警报'},
+      'warning.35': {en: 'Special storm warning', zh: '暴风特别警报'},
+      'warning.36': {en: 'Special heavy snow warning', zh: '大雪特别警报'},
+      'warning.37': {en: 'Special wave warning', zh: '海浪特别警报'},
+      'warning.38': {en: 'Special storm surge warning', zh: '高潮特别警报'},
+      'warning.39': {en: 'Special landslide warning', zh: '泥石流特别警报'},
+      'warning.43': {en: 'Heavy rain danger warning', zh: '大雨危险警报'},
+      'warning.48': {en: 'Storm surge danger warning', zh: '高潮危险警报'},
+      'warning.49': {en: 'Landslide danger warning', zh: '泥石流危险警报'},
+      'board.津波': {en: 'Tsunami', zh: '海啸'},
+      'board.河川氾濫': {en: 'River flooding', zh: '河流泛滥'},
+      'board.道路冠水': {en: 'Road flooding', zh: '道路积水'},
+      'board.土砂崩れ': {en: 'Landslide', zh: '山体滑坡'},
+      'board.積雪による道路遮断': {en: 'Road blocked by snow', zh: '积雪导致道路阻断'},
+      'board.獣害': {en: 'Wildlife damage', zh: '野生动物灾害'},
+      'board.山火事': {en: 'Wildfire', zh: '山火灾'},
+      'message.職員への指示': {en: 'Staff instruction', zh: '对工作人员的指示'},
+      'message.職員への情報発信': {en: 'Staff information', zh: '对工作人员的信息发布'},
+      'message.住民への情報発信': {en: 'Resident information', zh: '对居民的信息发布'},
+      'target.全住民': {en: 'All residents', zh: '全体居民'},
+      'target.高齢者': {en: 'Older adults', zh: '老年人'},
+      'target.子ども連れ': {en: 'Families with children', zh: '带孩子的家庭'},
+      'target.要配慮者': {en: 'People requiring care', zh: '需要照顾的人'},
+      'target.観光客': {en: 'Tourists', zh: '游客'},
+      'target.避難利用者': {en: 'Evacuees', zh: '避难人员'},
+      'priority.緊急': {en: 'Urgent', zh: '紧急'},
+      'priority.高': {en: 'High', zh: '高'},
+      'priority.通常': {en: 'Normal', zh: '通常'}
+    };
+    window.translateText = (key) => {
+      const translation = translations[key];
+      return translation ? (translation[window.bousaiLanguage] || key.split('.').slice(1).join('.')) : key;
+    };
+
     const shelterNameTranslations = {
       '御所見小学校': 'Goshomi Elementary School',
       '片瀬小学校': 'Katase Elementary School',
@@ -319,22 +404,26 @@
       '東町体育館': 'Higashimachi Gymnasium',
       'かきく': 'Kakiku Shelter'
     };
-    window.translateShelterName = (name) => window.bousaiLanguage === 'en' ? (shelterNameTranslations[name] || name) : name;
-    window.translateShelterAddress = (address) => window.bousaiLanguage === 'en' ? address.replace(/^青森市/, 'Aomori City ').replace(/中央|東町|西町|南町|北町/g, (area) => ({中央: 'Chuo', 東町: 'Higashimachi', 西町: 'Nishimachi', 南町: 'Minamicho', 北町: 'Kitamachi'})[area]) : address;
+    const shelterNameTranslationsZh = {'御所見小学校': '御所见小学', '片瀬小学校': '片濑小学', '鵠洋小学校': '鹄洋小学', '南町市民センター': '南町市民中心', '北町コミュニティホール': '北町社区礼堂', '中央公民館': '中央公民馆', '東町体育館': '东町体育馆', 'かきく': 'Kakiku 避难所'};
+    window.translateShelterName = (name) => window.bousaiLanguage === 'en' ? (shelterNameTranslations[name] || name) : window.bousaiLanguage === 'zh' ? (shelterNameTranslationsZh[name] || name) : name;
+    window.translateShelterAddress = (address) => {
+      if (window.bousaiLanguage === 'en') return address.replace(/^青森市/, 'Aomori City ').replace(/中央|東町|西町|南町|北町/g, (area) => ({中央: 'Chuo', 東町: 'Higashimachi', 西町: 'Nishimachi', 南町: 'Minamicho', 北町: 'Kitamachi'})[area]);
+      if (window.bousaiLanguage === 'zh') return address.replace(/^青森市/, '青森市').replace(/中央|東町|西町|南町|北町/g, (area) => ({中央: '中央', 東町: '东町', 西町: '西町', 南町: '南町', 北町: '北町'})[area]);
+      return address;
+    };
 
     function applyFontSize(size) {
-      document.body.dataset.fontSize = size;
-      const fontSizeButton = document.querySelector('#fontSizeButton');
-      fontSizeButton.setAttribute('aria-pressed', size === 'large');
-      localStorage.setItem('bousai-font-size', size);
+      const validSizes = ['small', 'normal', 'large'];
+      const selectedSize = validSizes.includes(size) ? size : 'normal';
+      document.body.dataset.fontSize = selectedSize;
+      fontSizeSelect.value = selectedSize;
+      localStorage.setItem('bousai-font-size', selectedSize);
     }
 
     applyLanguage(localStorage.getItem('bousai-language') || 'ja');
-    applyFontSize(localStorage.getItem('bousai-font-size') === 'large' ? 'large' : 'normal');
+    applyFontSize(localStorage.getItem('bousai-font-size') || 'normal');
     languageSelect.addEventListener('change', (event) => applyLanguage(event.target.value));
-    document.querySelector('#fontSizeButton').addEventListener('click', () => {
-      applyFontSize(document.body.dataset.fontSize === 'large' ? 'normal' : 'large');
-    });
+    fontSizeSelect.addEventListener('change', (event) => applyFontSize(event.target.value));
     menuButton.addEventListener('click', () => {
       const isOpen = mainNav.classList.toggle('is-open');
       menuButton.setAttribute('aria-expanded', isOpen);

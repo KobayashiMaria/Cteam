@@ -38,7 +38,7 @@
           <h2 class="shelter-name" data-shelter-name="{{ shelter.name }}">{{ shelter.name }}</h2>
           <p class="shelter-location">⌖ <span class="shelter-address" data-shelter-address="{{ shelter.address or shelter.location or shelter.district or '住所情報は未登録です' }}">{{ shelter.address or shelter.location or shelter.district or '住所情報は未登録です' }}</span></p>
           <div class="shelter-status">
-            <span class="status-badge status-{{ shelter.congestion or '空き' }}" data-ja="{{ shelter.congestion or '空き' }}" data-en="{% if shelter.congestion == '混雑' %}Crowded{% elif shelter.congestion == 'やや混雑' %}Somewhat crowded{% else %}Available{% endif %}">{{ shelter.congestion or '空き' }}</span>
+            <span class="status-badge status-{{ shelter.congestion or '空き' }}" data-ja="{{ shelter.congestion or '空き' }}" data-en="{% if shelter.congestion == '混雑' %}Crowded{% elif shelter.congestion == 'やや混雑' %}Somewhat crowded{% else %}Available{% endif %}" data-zh="{% if shelter.congestion == '混雑' %}拥挤{% elif shelter.congestion == 'やや混雑' %}较拥挤{% else %}空闲{% endif %}">{{ shelter.congestion or '空き' }}</span>
             <span class="capacity-badge" data-ja="収容 {{ shelter.capacity or 100 }}人" data-en="Capacity: {{ shelter.capacity or 100 }}">収容 {{ shelter.capacity or 100 }}人</span>
           </div>
           <p class="congestion-updated" data-ja="更新: {{ shelter.congestion_updated_at or '登録時刻は未登録です' }}" data-en="Updated: {{ shelter.congestion_updated_at or 'Not registered' }}">更新: {{ shelter.congestion_updated_at or '登録時刻は未登録です' }}</p>
@@ -93,13 +93,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function showRouteTo(shelter) {
     const isEnglish = window.bousaiLanguage === 'en';
+    const isChinese = window.bousaiLanguage === 'zh';
     if (!navigator.geolocation) {
-      alert(isEnglish ? 'This browser cannot access your location.' : 'このブラウザでは現在地を取得できません。');
+      alert(isEnglish ? 'This browser cannot access your location.' : isChinese ? '此浏览器无法获取当前位置。' : 'このブラウザでは現在地を取得できません。');
       return;
     }
 
     const routeStatus = document.getElementById('routeStatus');
-    routeStatus.textContent = isEnglish ? `Getting a route to ${shelter.name}...` : `${shelter.name}までの経路を取得しています...`;
+    const displayName = window.translateShelterName(shelter.name);
+    routeStatus.textContent = isEnglish ? `Getting a route to ${displayName}...` : isChinese ? `正在获取前往${displayName}的路线...` : `${displayName}までの経路を取得しています...`;
 
     navigator.geolocation.getCurrentPosition(function(position) {
       const current = [position.coords.latitude, position.coords.longitude];
@@ -109,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (currentLocationMarker) map.removeLayer(currentLocationMarker);
       currentLocationMarker = L.circleMarker(current, {
         radius: 8, color: '#285bab', fillColor: '#fff', fillOpacity: 1, weight: 3
-      }).addTo(map).bindPopup('現在地');
+      }).addTo(map).bindPopup(isEnglish ? 'Your location' : isChinese ? '当前位置' : '現在地');
 
       fetch(url)
         .then(response => response.json())
@@ -124,13 +126,13 @@ document.addEventListener('DOMContentLoaded', function() {
           map.fitBounds(routeLayer.getBounds(), {padding: [28, 28]});
           const distance = (data.routes[0].distance / 1000).toFixed(1);
           const minutes = Math.round(data.routes[0].duration / 60);
-          routeStatus.textContent = isEnglish ? `About ${minutes} min / ${distance} km to ${shelter.name}` : `${shelter.name}まで 約${minutes}分・${distance}km`;
+          routeStatus.textContent = isEnglish ? `About ${minutes} min / ${distance} km to ${displayName}` : isChinese ? `到${displayName}约需${minutes}分钟・${distance}公里` : `${displayName}まで 約${minutes}分・${distance}km`;
         })
         .catch(function() {
-          routeStatus.textContent = isEnglish ? 'Could not get the route. Please check the locations on the map.' : '経路を取得できませんでした。地図上の位置を確認してください。';
+          routeStatus.textContent = isEnglish ? 'Could not get the route. Please check the locations on the map.' : isChinese ? '无法获取路线，请确认地图上的位置。' : '経路を取得できませんでした。地図上の位置を確認してください。';
         });
     }, function() {
-      routeStatus.textContent = isEnglish ? 'Could not access your location. Please allow location access in your browser.' : '現在地を取得できませんでした。ブラウザの位置情報を許可してください。';
+      routeStatus.textContent = isEnglish ? 'Could not access your location. Please allow location access in your browser.' : isChinese ? '无法获取当前位置，请允许浏览器使用位置信息。' : '現在地を取得できませんでした。ブラウザの位置情報を許可してください。';
     }, {enableHighAccuracy: true, timeout: 10000});
   }
 
@@ -140,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const displayName = window.translateShelterName(shelter.name);
     const displayAddress = window.translateShelterAddress(shelter.address || '住所情報は未登録です');
     const isEnglish = window.bousaiLanguage === 'en';
+    const isChinese = window.bousaiLanguage === 'zh';
     const markerIcon = L.divIcon({
       className: 'numbered-marker',
       html: `<span><b>${index + 1}</b></span>`,
@@ -149,8 +152,8 @@ document.addEventListener('DOMContentLoaded', function() {
     L.marker(point, {icon: markerIcon}).addTo(map).bindPopup(`
       <strong>${index + 1}. ${displayName}</strong><br>
       ${displayAddress}<br>
-      ${isEnglish ? (shelter.congestion === '混雑' ? 'Crowded' : shelter.congestion === 'やや混雑' ? 'Somewhat crowded' : 'Available') : (shelter.congestion || '空き')} / ${isEnglish ? 'Capacity: ' : '収容 '}${shelter.capacity || 100}${isEnglish ? '' : '人'}<br>
-      ${isEnglish ? 'Updated: ' : '更新: '}${shelter.congestion_updated_at || (isEnglish ? 'Not registered' : '登録時刻は未登録です')}
+      ${window.translateText(`congestion.${shelter.congestion || '空き'}`)} / ${isEnglish ? 'Capacity: ' : isChinese ? '容纳人数：' : '収容 '}${shelter.capacity || 100}${isEnglish || isChinese ? '' : '人'}<br>
+      ${isEnglish ? 'Updated: ' : isChinese ? '更新：' : '更新: '}${shelter.congestion_updated_at || (isEnglish ? 'Not registered' : isChinese ? '未登记' : '登録時刻は未登録です')}
     `).on('click', function() {
       showRouteTo(shelter);
     });

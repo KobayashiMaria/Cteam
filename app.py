@@ -482,8 +482,34 @@ def get_weather_warnings():
 # トップページ：templates/index.html を返す（住民向け指示も表示する）
 @app.route('/')
 def index():
-    resident_notices = [i for i in instructions if i.get('target') == '住民']
+    resident_notices = [
+        item for item in instructions
+        if item.get('target') == '住民' and is_active_instruction(item)
+    ]
+    resident_notices.sort(
+        key=lambda item: item.get('published_at', item.get('created_at', '')),
+        reverse=True
+    )
+    resident_notices = resident_notices[:3]
     return render_template('index.html', resident_notices=resident_notices)
+
+@app.route('/notifications/<int:instruction_id>')
+def notification_detail(instruction_id):
+    notice = find_instruction(instruction_id)
+    if not notice or notice.get('target') != '住民' or not is_active_instruction(notice):
+        return 'お知らせが見つかりません。', 404
+    notice['read'] = True
+    save_instructions()
+    return render_template('notification_detail.html', notice=notice)
+
+@app.route('/notifications')
+def notification_list():
+    notices = [
+        item for item in instructions
+        if item.get('target') == '住民' and is_active_instruction(item)
+    ]
+    notices.sort(key=lambda item: item.get('published_at', item.get('created_at', '')), reverse=True)
+    return render_template('notification_list.html', notices=notices)
 
 # ログインページ
 @app.route('/login', methods=['GET', 'POST'])

@@ -30,61 +30,61 @@
 </style>
 
 <section class="search-page" aria-labelledby="search-page-heading">
-  <p class="eyebrow">SHELTER SEARCH</p>
-  <h1 id="search-page-heading" data-ja="避難所検索" data-en="Shelter search">避難所検索</h1>
+  <p class="eyebrow" data-ja="避難所検索" data-en="SHELTER SEARCH" data-zh="避难所搜索">避難所検索</p>
+  <h1 id="search-page-heading" data-ja="避難所検索" data-en="Shelter search" data-zh="避难所搜索">避難所検索</h1>
 
   <section class="search-section" aria-labelledby="nearby-heading">
-    <h2 id="nearby-heading" data-ja="簡易検索" data-en="Quick search">簡易検索</h2>
-    <p data-ja="現在地から近い避難所を検索します。" data-en="Find shelters near your current location.">現在地から近い避難所を検索します。</p>
+    <h2 id="nearby-heading" data-ja="簡易検索" data-en="Quick search" data-zh="快速搜索">簡易検索</h2>
+    <p data-ja="現在地から近い避難所を検索します。" data-en="Find shelters near your current location." data-zh="搜索当前位置附近的避难所。">現在地から近い避難所を検索します。</p>
     <form id="nearbySearchForm" action="{{ url_for('search_results') }}" method="get">
       <input type="hidden" name="latitude" id="nearbyLatitude">
       <input type="hidden" name="longitude" id="nearbyLongitude">
-      <button class="nearby-button" type="submit" id="nearbySearchButton" data-ja="最寄りの避難所を検索する" data-en="Find nearby shelters">最寄りの避難所を検索する</button>
+      <button class="nearby-button" type="submit" id="nearbySearchButton" data-ja="最寄りの避難所を検索する" data-en="Find nearby shelters" data-zh="搜索附近的避难所">最寄りの避難所を検索する</button>
       <p class="location-status" id="nearbyStatus" role="status" aria-live="polite"></p>
     </form>
   </section>
 
   <section class="search-section" aria-labelledby="detail-heading">
-    <h2 id="detail-heading" data-ja="詳細検索" data-en="Detailed search">詳細検索</h2>
+    <h2 id="detail-heading" data-ja="詳細検索" data-en="Detailed search" data-zh="详细搜索">詳細検索</h2>
     <form id="detailSearchForm" class="detail-form" action="{{ url_for('search_results') }}" method="get">
       <div>
-        <label for="shelterName" data-ja="避難所名：" data-en="Shelter name:">避難所名：</label>
-        <input type="search" id="shelterName" name="name" placeholder="避難所名を入力" data-placeholder-ja="避難所名を入力" data-placeholder-en="Enter shelter name">
+        <label for="shelterName" data-ja="避難所名：" data-en="Shelter name:" data-zh="避难所名称：">避難所名：</label>
+        <input type="search" id="shelterName" name="name" placeholder="避難所名を入力" data-placeholder-ja="避難所名を入力" data-placeholder-en="Enter shelter name" data-placeholder-zh="输入避难所名称">
       </div>
 
       <fieldset class="search-fieldset">
-        <legend data-ja="配慮事項（複数選択可）" data-en="Support needs (select all that apply)">配慮事項（複数選択可）</legend>
+        <legend data-ja="配慮事項（複数選択可）" data-en="Support needs (select all that apply)" data-zh="特殊需求（可多选）">配慮事項（複数選択可）</legend>
         <div class="concern-list">
-          <label><input type="checkbox" name="concern" value="高齢者（65歳以上）"><span data-ja="高齢者（65歳以上）" data-en="Older adults (65+)">高齢者（65歳以上）</span></label>
-          <label><input type="checkbox" name="concern" value="子供連れ"><span data-ja="子供連れ" data-en="Families with children">子供連れ</span></label>
-          <label><input type="checkbox" name="concern" value="障害者・要介護者"><span data-ja="障害者・要介護者" data-en="People with disabilities or care needs">障害者・要介護者</span></label>
-          <label><input type="checkbox" name="concern" value="外国人"><span data-ja="外国人" data-en="Foreign visitors">外国人</span></label>
-          <label><input type="checkbox" name="concern" value="ペット"><span data-ja="ペット" data-en="Pets">ペット</span></label>
+          <label><input type="checkbox" name="concern" value="高齢者（65歳以上）"><span data-ja="高齢者（65歳以上）" data-en="Older adults (65+)" data-zh="老年人（65岁以上）">高齢者（65歳以上）</span></label>
+          <label><input type="checkbox" name="concern" value="子供連れ"><span data-ja="子供連れ" data-en="Families with children" data-zh="带孩子的家庭">子供連れ</span></label>
+          <label><input type="checkbox" name="concern" value="障害者・要介護者"><span data-ja="障害者・要介護者" data-en="People with disabilities or care needs" data-zh="残障人士或需要照护者">障害者・要介護者</span></label>
+          <label><input type="checkbox" name="concern" value="外国人"><span data-ja="外国人" data-en="Foreign visitors" data-zh="外国访客">外国人</span></label>
+          <label><input type="checkbox" name="concern" value="ペット"><span data-ja="ペット" data-en="Pets" data-zh="宠物">ペット</span></label>
         </div>
       </fieldset>
 
-      <button class="nearby-button detail-submit" type="submit" data-ja="条件を指定して検索" data-en="Search with these criteria">条件を指定して検索</button>
+      <button class="nearby-button detail-submit" type="submit" data-ja="条件を指定して検索" data-en="Search with these criteria" data-zh="按条件搜索">条件を指定して検索</button>
     </form>
   </section>
 
-  <a class="search-back-link" href="{{ url_for('all_shelters') }}" data-ja="登録されている避難所をすべて見る" data-en="View all registered shelters">登録されている避難所をすべて見る</a>
+  <a class="search-back-link" href="{{ url_for('all_shelters') }}" data-ja="登録されている避難所をすべて見る" data-en="View all registered shelters" data-zh="查看所有已登记的避难所">登録されている避難所をすべて見る</a>
 </section>
 
 <script>
   function requestCurrentLocation(form, statusElement, button, latitudeInput, longitudeInput, submitForm) {
     if (!navigator.geolocation) {
-      statusElement.textContent = window.bousaiLanguage === 'en' ? 'This browser cannot access your location.' : 'このブラウザでは現在地を取得できません。';
+      statusElement.textContent = window.bousaiLanguage === 'en' ? 'This browser cannot access your location.' : window.bousaiLanguage === 'zh' ? '此浏览器无法获取当前位置。' : 'このブラウザでは現在地を取得できません。';
       return;
     }
     button.disabled = true;
-    statusElement.textContent = window.bousaiLanguage === 'en' ? 'Checking your current location...' : '現在地を確認しています...';
+    statusElement.textContent = window.bousaiLanguage === 'en' ? 'Checking your current location...' : window.bousaiLanguage === 'zh' ? '正在确认当前位置...' : '現在地を確認しています...';
     navigator.geolocation.getCurrentPosition(function(position) {
       latitudeInput.value = position.coords.latitude;
       longitudeInput.value = position.coords.longitude;
       submitForm();
     }, function() {
       button.disabled = false;
-      statusElement.textContent = window.bousaiLanguage === 'en' ? 'Could not get your location. Please allow location access.' : '現在地を取得できませんでした。位置情報を許可してください。';
+      statusElement.textContent = window.bousaiLanguage === 'en' ? 'Could not get your location. Please allow location access.' : window.bousaiLanguage === 'zh' ? '无法获取当前位置，请允许使用位置信息。' : '現在地を取得できませんでした。位置情報を許可してください。';
     }, {enableHighAccuracy: true, timeout: 10000});
   }
 

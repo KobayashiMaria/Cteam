@@ -119,8 +119,48 @@
     "disaster_type": [
       "地震"
     ],
-    "congestion": "空き",
+    "congestion": "混雑",
     "congestion_updated_at": "2026年09月10日 11:42",
     "capacity": 100
+  },
+  {
+    "id": 12,
+    "name": "鵠洋小学校",
+    "name_roman": "A",
+    "facility_type": "指定避難所",
+    "supports": [],
+    "accepted_count": 0,
+    "check_time": "2026-09-10T15:14",
+    "stock_count": 0,
+    "address": "あいう",
+    "address_english": "",
+    "disaster_type": [
+      "津波",
+      "地震"
+    ],
+    "congestion": "空き",
+    "congestion_updated_at": "2026年09月10日 15:17",
+    "capacity": 10
+  },
+  {
+    "id": 13,
+    "name": "鵠洋小学校",
+    "name_roman": "A",
+    "facility_type": "指定避難所",
+    "supports": [
+      "elderly"
+    ],
+    "accepted_count": 0,
+    "check_time": "2026-09-10T15:14",
+    "stock_count": 0,
+    "address": "青森市西町3-4",
+    "address_english": "",
+    "disaster_type": [
+      "津波",
+      "地震"
+    ],
+    "congestion": "空き",
+    "congestion_updated_at": "2026年09月10日 15:19",
+    "capacity": 10
   }
 ]

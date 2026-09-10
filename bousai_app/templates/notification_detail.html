@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}お知らせ詳細 - 防災アプリ{% endblock %}
+
+{% block content %}
+<style>
+  .notification-detail { width: min(760px, calc(100% - 32px)); margin: 28px auto 76px; }
+  .notification-panel { padding: 28px; border: 1px solid #edf1f7; border-radius: 8px; background: #fff; box-shadow: 0 6px 23px rgba(56, 76, 107, .08); }
+  .notification-back { display: inline-block; margin-bottom: 20px; color: #285aa8; font-weight: 800; text-decoration: none; }
+  .notification-back:hover, .notification-back:focus-visible { text-decoration: underline; }
+  .notification-heading { margin: 0 0 20px; color: #285aa8; font-size: 25px; }
+  .notification-meta { display: grid; gap: 10px; margin: 0 0 24px; padding: 16px; border-radius: 6px; background: #f4f6f9; }
+  .notification-meta div { display: flex; gap: 12px; }
+  .notification-meta dt { min-width: 96px; color: #667085; font-weight: 800; }
+  .notification-meta dd { margin: 0; color: #34445a; }
+  .notification-content { margin: 0; color: #34445a; line-height: 1.8; white-space: pre-wrap; }
+  .notification-priority-緊急 { color: #c43e3e !important; font-weight: 800; }
+  .notification-priority-高 { color: #a56b00 !important; font-weight: 800; }
+  @media (max-width: 600px) { .notification-detail { width: calc(100% - 24px); margin-top: 18px; } .notification-panel { padding: 20px 16px; } .notification-heading { font-size: 21px; } .notification-meta div { display: block; } .notification-meta dt { margin-bottom: 3px; } }
+</style>
+
+<main class="notification-detail">
+  <a class="notification-back" href="{{ url_for('index') }}">← ホームのお知らせに戻る</a>
+  <article class="notification-panel">
+    <h1 class="notification-heading">お知らせ詳細</h1>
+    <dl class="notification-meta">
+      {% if notice.get('disaster') %}<div><dt>災害名</dt><dd>{{ notice.get('disaster') }}</dd></div>{% endif %}
+      {% if notice.get('priority') %}<div><dt>優先度</dt><dd class="notification-priority-{{ notice.get('priority') }}">{{ notice.get('priority') }}</dd></div>{% endif %}
+      {% if notice.get('shelter') %}<div><dt>避難先</dt><dd>{{ notice.get('shelter') }}</dd></div>{% endif %}
+      {% if notice.get('published_at') or notice.get('created_at') %}<div><dt>発信日時</dt><dd>{{ notice.get('published_at') or notice.get('created_at') }}</dd></div>{% endif %}
+    </dl>
+    <p class="notification-content">{{ notice.get('content', '') }}</p>
+  </article>
+</main>
+{% endblock %}
