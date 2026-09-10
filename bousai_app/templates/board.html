@@ -3,23 +3,121 @@
 {% block title %}指示・発信ボード - 防災アプリ{% endblock %}
 
 {% block content %}
-<h2 data-ja="発信ボード" data-en="Message board">発信ボード</h2>
-<p data-ja="住民向けの発信を登録・確認できます。" data-en="Register and review messages for residents.">住民向けの発信を登録・確認できます。</p>
+<style>
+  .board-page { width: min(1240px, calc(100% - 32px)); margin: 24px auto 76px; }
+  .board-section { margin-bottom: 20px; padding: 24px; border: 1px solid #edf1f7; border-radius: 8px; background: #fff; box-shadow: 0 6px 23px rgba(56, 76, 107, .08); }
+  .board-section h1, .board-section h2 { margin: 0 0 20px; color: #285aa8; }
+  .board-section h1 { font-size: 25px; }
+  .board-section h2 { font-size: 21px; }
+  .board-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .board-stat { padding: 18px; border-radius: 6px; background: #f4f6f9; color: #59687a; font-weight: 800; }
+  .board-stat strong { display: block; margin-top: 5px; color: #285aa8; font-size: 28px; }
+  .board-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .7fr); gap: 24px; }
+  .board-form { display: grid; gap: 17px; }
+  .board-field label, .board-field legend { display: block; margin-bottom: 7px; color: #37475c; font-weight: 800; }
+  .required { color: #c43e3e; }
+  .board-field input[type="text"], .board-field input[type="date"], .board-field input[type="time"], .board-field select, .board-field textarea { width: 100%; padding: 11px 12px; border: 1px solid #dce3ed; border-radius: 5px; color: #3f4b5d; font: inherit; }
+  .board-field textarea { min-height: 115px; resize: vertical; }
+  .board-fieldset { margin: 0; padding: 0; border: 0; }
+  .board-options { display: flex; flex-wrap: wrap; gap: 9px 18px; }
+  .board-options label { display: flex; align-items: center; gap: 6px; color: #4a596b; font-weight: 400; cursor: pointer; }
+  .board-options input { accent-color: #285bab; }
+  .expiry-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .audience-field[hidden] { display: none; }
+  .board-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .board-button { padding: 11px 19px; border: 0; border-radius: 5px; background: #285bab; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+  .board-button.secondary { background: #e2f0fc; color: #214b96; }
+  .board-error { margin: 0 0 17px; padding: 11px 13px; border: 1px solid #f0b9b9; border-radius: 5px; background: #fff1f1; color: #b52d2d; font-weight: 800; }
+  .draft-list { display: grid; gap: 10px; }
+  .draft-item { padding: 13px; border: 1px solid #e5eaf1; border-radius: 5px; background: #f8fafc; }
+  .draft-item strong { display: block; margin-bottom: 5px; color: #34445a; }
+  .draft-item p { margin: 0 0 10px; color: #667085; font-size: 13px; white-space: pre-wrap; }
+  .draft-actions { display: flex; gap: 8px; }
+  .text-button { padding: 6px 10px; border: 1px solid #cbd9ef; border-radius: 4px; background: #fff; color: #285aa8; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; text-decoration: none; }
+  .board-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+  .board-filters label { color: #37475c; font-size: 13px; font-weight: 800; }
+  .board-filters select { display: block; width: 100%; margin-top: 5px; padding: 9px; border: 1px solid #dce3ed; border-radius: 5px; background: #fff; color: #3f4b5d; font: inherit; }
+  .table-scroll { overflow-x: auto; }
+  .board-table { width: 100%; min-width: 1050px; border-collapse: collapse; }
+  .board-table th, .board-table td { padding: 11px 9px; border-bottom: 1px solid #e5eaf1; text-align: left; vertical-align: top; }
+  .board-table th { color: #285aa8; font-size: 13px; white-space: nowrap; }
+  .board-table td { color: #4a596b; font-size: 14px; }
+  .board-table .content-cell { min-width: 220px; white-space: pre-wrap; }
+  .priority-緊急 { color: #c43e3e; font-weight: 800; }
+  .priority-高 { color: #a56b00; font-weight: 800; }
+  .board-empty { padding: 24px 0 8px; color: #667085; }
+  @media (max-width: 760px) {
+    .board-page { width: calc(100% - 24px); margin-top: 18px; }
+    .board-section { padding: 18px 14px; }
+    .board-stats, .board-layout { display: block; }
+    .board-stat { margin-bottom: 8px; }
+    .board-layout > * + * { margin-top: 18px; }
+    .board-filters { grid-template-columns: 1fr; }
+  }
+</style>
 
-<!-- 発信一覧 -->
-<h3 data-ja="発信一覧" data-en="Message list">発信一覧</h3>
-{% if instructions %}
-<table border="1" cellpadding="5">
-  <tr>
-    <th data-ja="内容" data-en="Content">内容</th>
-  </tr>
-  {% for inst in instructions %}
-  <tr>
-    <td>{{ inst.content }}{% if inst.shelter %}（避難先: {{ inst.shelter }}）{% endif %}</td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}
-<p data-ja="登録されている指示はありません。" data-en="No messages have been registered.">登録されている指示はありません。</p>
-{% endif %}
+<div class="board-page">
+  <section class="board-section" aria-labelledby="status-heading">
+    <h1 id="status-heading">現在の状況</h1>
+    <div class="board-stats" aria-live="polite">
+      <div class="board-stat">対応中 <strong>{{ counts.draft }}件</strong></div>
+      <div class="board-stat">発信済 <strong>{{ counts.published }}件</strong></div>
+      <div class="board-stat">本日発信 <strong>{{ counts.today }}件</strong></div>
+    </div>
+  </section>
+
+  <section class="board-section" aria-labelledby="new-heading">
+    <h2 id="new-heading">新規 指示・発信</h2>
+    <div class="board-layout">
+      <div>
+        {% if error %}<p class="board-error" role="alert">{{ error }}</p>{% endif %}
+        <form class="board-form" method="post" action="{{ url_for('board') }}">
+          <input type="hidden" name="edit_id" value="{{ edit_id }}">
+          <div class="board-field">
+            <label for="disaster">災害名 <span class="required">＊</span></label>
+            <select id="disaster" name="disaster">
+              <option value="">選択してください</option>
+              {% for option in disasters %}<option value="{{ option }}" {% if form_data.disaster == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="board-field">
+            <label for="content">内容 <span class="required">＊</span></label>
+            <textarea id="content" name="content">{{ form_data.content or '' }}</textarea>
+          </div>
+          <div class="board-field">
+            <label>表示期限</label>
+            <div class="expiry-fields"><input type="date" id="expiry_date" name="expiry_date" aria-label="表示期限の日付" value="{{ form_data.expiry_date or '' }}"><input type="time" id="expiry_time" name="expiry_time" aria-label="表示期限の時刻" value="{{ form_data.expiry_time or '' }}"></div>
+          </div>
+          <div class="board-field">
+            <label for="shelter_id">関連する避難所 <span class="required">＊</span></label>
+            <select id="shelter_id" name="shelter_id"><option value="">選択してください</option>{% for shelter_id, shelter_name in shelters %}<option value="{{ shelter_id }}" {% if form_data.shelter_id|string == shelter_id %}selected{% endif %}>{{ shelter_name }}</option>{% endfor %}</select>
+          </div>
+          <fieldset class="board-field board-fieldset"><legend>種類 <span class="required">＊</span></legend><div class="board-options">{% for option in message_types %}<label><input type="radio" name="message_type" value="{{ option }}" {% if form_data.message_type == option %}checked{% endif %}>{{ option }}</label>{% endfor %}</div></fieldset>
+          <fieldset class="board-field board-fieldset audience-field" id="audienceField" {% if form_data.message_type != '住民への情報発信' %}hidden{% endif %}>
+            <legend>対象者 <span class="required">＊</span></legend><div class="board-options">{% for option in targets %}<label><input type="checkbox" name="target_audience" value="{{ option }}" {% if option in (form_data.target_audience or []) %}checked{% endif %}>{{ option }}</label>{% endfor %}</div>
+          </fieldset>
+          <fieldset class="board-field board-fieldset"><legend>優先度 <span class="required">＊</span></legend><div class="board-options">{% for option in priorities %}<label><input type="radio" name="priority" value="{{ option }}" {% if (form_data.priority or '通常') == option %}checked{% endif %}>{{ option }}</label>{% endfor %}</div></fieldset>
+          <div class="board-actions"><button class="board-button secondary" type="submit" name="action" value="draft">下書き保存</button><button class="board-button" type="submit" name="action" value="publish">指示・発信する</button></div>
+        </form>
+      </div>
+      <aside aria-labelledby="draft-heading"><h3 id="draft-heading">下書き一覧</h3><div class="draft-list">{% for draft in drafts %}<article class="draft-item"><strong>{{ draft.disaster or '未入力' }}</strong><p>{{ draft.content or '内容未入力' }}</p><div class="draft-actions"><a class="text-button" href="{{ url_for('board', edit_id=draft.id) }}">適用</a><form method="post" action="{{ url_for('board_delete', instruction_id=draft.id) }}" onsubmit="return confirm('この下書きを削除しますか？');"><button class="text-button" type="submit">削除</button></form></div></article>{% else %}<p class="board-empty">下書きはありません。</p>{% endfor %}</div></aside>
+    </div>
+  </section>
+
+  <section class="board-section" aria-labelledby="list-heading">
+    <h2 id="list-heading">指示・発信一覧</h2>
+    <div class="board-filters"><label for="filterDisaster">災害別<select id="filterDisaster"><option value="">すべて</option>{% for option in disasters %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label><label for="filterPriority">優先度別<select id="filterPriority"><option value="">すべて</option>{% for option in priorities %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label><label for="filterTarget">対象者別<select id="filterTarget"><option value="">すべて</option>{% for option in targets %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select></label></div>
+    <div class="table-scroll"><table class="board-table"><thead><tr><th>災害名</th><th>種類</th><th>対象</th><th>内容</th><th>表示期限</th><th>関連する避難所</th><th>優先度</th><th>状態</th><th>操作</th></tr></thead><tbody id="instructionRows">{% for inst in instructions %}<tr data-disaster="{{ inst.disaster }}" data-priority="{{ inst.priority }}" data-targets="{{ (inst.target_audience or [])|join('|') }}"><td>{{ inst.disaster or '―' }}</td><td>{{ inst.message_type or '―' }}</td><td>{{ (inst.target_audience or [])|join('、') if inst.message_type == '住民への情報発信' else '' }}</td><td class="content-cell">{{ inst.content }}</td><td>{{ inst.display_until|replace('T', ' ') if inst.display_until else '―' }}</td><td>{{ inst.shelter or '―' }}</td><td class="priority-{{ inst.priority }}">{{ inst.priority or '―' }}</td><td>{{ inst.state or '―' }}</td><td><a class="text-button" href="{{ url_for('board', edit_id=inst.id) }}">編集</a><form method="post" action="{{ url_for('board_delete', instruction_id=inst.id) }}" onsubmit="return confirm('この指示・発信を削除しますか？');"><button class="text-button" type="submit">削除</button></form></td></tr>{% endfor %}</tbody></table></div><p id="noMatches" class="board-empty" {% if instructions %}hidden{% endif %}>条件に一致する指示・発信はありません。</p>
+  </section>
+</div>
+<script>
+  (function () {
+    const audienceField = document.getElementById('audienceField');
+    document.querySelectorAll('input[name="message_type"]').forEach(function (input) { input.addEventListener('change', function () { const visible = input.value === '住民への情報発信' && input.checked; audienceField.hidden = !visible; audienceField.querySelectorAll('input').forEach(function (checkbox) { checkbox.disabled = !visible; }); }); });
+    const filters = [document.getElementById('filterDisaster'), document.getElementById('filterPriority'), document.getElementById('filterTarget')];
+    const rows = Array.from(document.querySelectorAll('#instructionRows tr')); const empty = document.getElementById('noMatches');
+    function filterRows() { const values = filters.map(function (filter) { return filter.value; }); let count = 0; rows.forEach(function (row) { const targetMatch = !values[2] || row.dataset.targets.split('|').indexOf(values[2]) >= 0; const match = (!values[0] || row.dataset.disaster === values[0]) && (!values[1] || row.dataset.priority === values[1]) && targetMatch; row.hidden = !match; if (match) count += 1; }); empty.hidden = count !== 0; }
+    filters.forEach(function (filter) { filter.addEventListener('change', filterRows); }); filterRows();
+  }());
+</script>
 {% endblock %}

@@ -27,8 +27,7 @@
       font-size: 16px;
     }
 
-    body[data-font-size="large"] { zoom: 1.1; }
-    body[data-font-size="x-large"] { zoom: 1.2; }
+    body[data-font-size="large"] { zoom: 1.2; }
 
     .app-header {
       height: 70px;
@@ -64,7 +63,12 @@
 
     .menu-button svg { display: block; width: 27px; height: 27px; }
 
-    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .header-actions { display: flex; align-items: center; gap: 7px; }
+    .header-action, .font-size-button { min-height: 34px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, .32); border-radius: 5px; background: rgba(255, 255, 255, .95); color: #214b96; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .header-action:hover, .font-size-button:hover { background: #e2f0fc; }
+    .header-action:focus-visible, .font-size-button:focus-visible, .menu-button:focus-visible { outline: 3px solid #f9d36a; outline-offset: 2px; }
+    .header-status { color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .font-size-button[aria-pressed="true"] { background: #e2f0fc; }
     .header-setting { display: flex; align-items: center; gap: 5px; color: #fff; font-size: 12px; font-weight: 700; }
     .header-setting select { min-width: 92px; padding: 7px 24px 7px 8px; border: 1px solid rgba(255, 255, 255, .4); border-radius: 6px; background: rgba(255, 255, 255, .14); color: #fff; font: inherit; cursor: pointer; }
     .header-setting select option { background: #fff; color: #35445a; }
@@ -214,6 +218,8 @@
       .header-actions { gap: 3px; }
       .header-setting { gap: 2px; font-size: 10px; }
       .header-setting select { min-width: 68px; padding: 6px 16px 6px 5px; font-size: 11px; }
+      .header-action, .font-size-button { min-height: 30px; padding: 5px 6px; font-size: 10px; }
+      .header-status { font-size: 10px; }
       .menu-button { padding: 6px 3px 6px 5px; }
       .main-nav { top: 56px; right: 14px; }
       .page-shell { width: calc(100% - 24px); margin-top: 18px; }
@@ -239,19 +245,19 @@
     <div class="header-inner">
       <a class="brand" href="/" data-ja="防災アプリ" data-en="Disaster App">防災アプリ</a>
       <div class="header-actions">
+        {% if session.logged_in %}
+          <a class="header-action" href="{{ url_for('logout') }}" data-ja="ログアウト" data-en="Log out" data-zh="登出">ログアウト</a>
+          <span class="header-status" data-ja="ログイン中" data-en="Logged in" data-zh="已登录">ログイン中</span>
+        {% else %}
+          <span class="header-status" data-ja="未ログイン" data-en="Not logged in" data-zh="未登录">未ログイン</span>
+        {% endif %}
+        <button class="font-size-button" type="button" id="fontSizeButton" aria-pressed="false" data-ja="文字の大きさ" data-en="Text size" data-zh="文字大小">文字の大きさ</button>
         <label class="header-setting">
-          <span data-ja="言語" data-en="Language">言語</span>
+          <span data-ja="言語" data-en="Language" data-zh="语言">言語</span>
           <select id="languageSelect" aria-label="言語">
-            <option value="ja" data-ja="日本語" data-en="Japanese">日本語</option>
-            <option value="en" data-ja="英語" data-en="English">English</option>
-          </select>
-        </label>
-        <label class="header-setting">
-          <span data-ja="文字" data-en="Text">文字</span>
-          <select id="fontSizeSelect" aria-label="文字サイズ">
-            <option value="normal" data-ja="標準" data-en="Standard">標準</option>
-            <option value="large" data-ja="大きい" data-en="Large">大きい</option>
-            <option value="x-large" data-ja="特大" data-en="Extra large">特大</option>
+            <option value="ja" data-ja="日本語" data-en="Japanese" data-zh="日语">日本語</option>
+            <option value="en" data-ja="英語" data-en="English" data-zh="英语">English</option>
+            <option value="zh" data-ja="中国語" data-en="Chinese" data-zh="中文">中文</option>
           </select>
         </label>
         <button class="menu-button" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="mainNav">
@@ -267,6 +273,7 @@
           <span data-ja="ログイン中{% if session.username %}（{{ session.username }}）{% endif %}" data-en="Logged in{% if session.username %} ({{ session.username }}){% endif %}">ログイン中{% if session.username %}（{{ session.username }}）{% endif %}</span>
           <a href="/logout" data-ja="ログアウト" data-en="Log out">ログアウト</a>
         {% else %}
+          <span data-ja="未ログイン" data-en="Not logged in" data-zh="未登录">未ログイン</span>
           <a href="/login" data-ja="ログイン" data-en="Log in">ログイン</a>
         {% endif %}
       </nav>
@@ -286,7 +293,7 @@
       window.bousaiLanguage = language;
       document.documentElement.lang = language;
       document.querySelectorAll('[data-ja][data-en]').forEach((element) => {
-        element.textContent = element.dataset[language];
+        element.textContent = element.dataset[language] || element.dataset.en;
       });
       document.querySelectorAll('[data-placeholder-ja][data-placeholder-en]').forEach((element) => {
         element.placeholder = element.dataset[`placeholder${language === 'ja' ? 'Ja' : 'En'}`];
@@ -317,14 +324,17 @@
 
     function applyFontSize(size) {
       document.body.dataset.fontSize = size;
-      fontSizeSelect.value = size;
+      const fontSizeButton = document.querySelector('#fontSizeButton');
+      fontSizeButton.setAttribute('aria-pressed', size === 'large');
       localStorage.setItem('bousai-font-size', size);
     }
 
     applyLanguage(localStorage.getItem('bousai-language') || 'ja');
-    applyFontSize(localStorage.getItem('bousai-font-size') || 'normal');
+    applyFontSize(localStorage.getItem('bousai-font-size') === 'large' ? 'large' : 'normal');
     languageSelect.addEventListener('change', (event) => applyLanguage(event.target.value));
-    fontSizeSelect.addEventListener('change', (event) => applyFontSize(event.target.value));
+    document.querySelector('#fontSizeButton').addEventListener('click', () => {
+      applyFontSize(document.body.dataset.fontSize === 'large' ? 'normal' : 'large');
+    });
     menuButton.addEventListener('click', () => {
       const isOpen = mainNav.classList.toggle('is-open');
       menuButton.setAttribute('aria-expanded', isOpen);

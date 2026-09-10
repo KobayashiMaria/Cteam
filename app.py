@@ -95,6 +95,11 @@ def load_json(path, default):
 shelters = load_json(DATA_FILE, [])
 instructions = load_json(INSTRUCTIONS_FILE, [])
 
+BOARD_DISASTERS = ('津波', '河川氾濫', '道路冠水', '土砂崩れ', '積雪による道路遮断', '獣害', '山火事')
+BOARD_TYPES = ('職員への指示', '職員への情報発信', '住民への情報発信')
+BOARD_TARGETS = ('全住民', '高齢者', '子ども連れ', '要配慮者', '観光客', '避難利用者')
+BOARD_PRIORITIES = ('緊急', '高', '通常')
+
 def save_instructions():
     """指示ボードのデータをファイルに保存する"""
     try:
@@ -107,6 +112,109 @@ def save_shelters():
     """避難所データをファイルに保存する"""
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(shelters, f, ensure_ascii=False, indent=2)
+
+
+def board_now():
+    return datetime.now(JST)
+
+
+def next_instruction_id():
+    return max((int(item.get('id', 0)) for item in instructions if str(item.get('id', '')).isdigit()), default=0) + 1
+
+
+def board_shelter_options():
+    return [(str(item.get('id')), item.get('name', '')) for item in shelters]
+
+
+def find_instruction(instruction_id):
+    return next((item for item in instructions if str(item.get('id')) == str(instruction_id)), None)
+
+
+def is_published_instruction(item):
+    return item.get('visibility_status') != '下書き' and item.get('is_draft') is not True
+
+
+def instruction_expiry(item):
+    value = item.get('display_until')
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+        return parsed.replace(tzinfo=JST) if parsed.tzinfo is None else parsed.astimezone(JST)
+    except (TypeError, ValueError):
+        return None
+
+
+def is_active_instruction(item, now=None):
+    if not is_published_instruction(item):
+        return False
+    expiry = instruction_expiry(item)
+    return expiry is None or expiry >= (now or board_now())
+
+
+def board_counts():
+    now = board_now()
+    return {
+        'draft': sum(not is_published_instruction(item) for item in instructions),
+        'published': sum(is_active_instruction(item, now) for item in instructions),
+        'today': sum(
+            is_published_instruction(item)
+            and str(item.get('published_at', item.get('created_at', ''))).startswith(now.strftime('%Y-%m-%d'))
+            for item in instructions
+        )
+    }
+
+
+def board_form_data(form):
+    disaster = form.get('disaster', '').strip()
+    content = form.get('content', '').strip()
+    shelter_id = form.get('shelter_id', '').strip()
+    message_type = form.get('message_type', '').strip()
+    targets = [target for target in form.getlist('target_audience') if target in BOARD_TARGETS]
+    priority = form.get('priority', '').strip()
+    expiry_date = form.get('expiry_date', '').strip()
+    expiry_time = form.get('expiry_time', '').strip()
+    shelter = next((item for item in shelters if str(item.get('id')) == shelter_id), None)
+    return {
+        'disaster': disaster, 'content': content, 'shelter_id': shelter_id,
+        'shelter': shelter.get('name', '') if shelter else '',
+        'message_type': message_type,
+        'target_audience': targets if message_type == '住民への情報発信' else [],
+        'priority': priority, 'expiry_date': expiry_date, 'expiry_time': expiry_time,
+    }
+
+
+def board_validation(data):
+    required = (
+        data['disaster'] in BOARD_DISASTERS, bool(data['content']), bool(data['shelter']),
+        data['message_type'] in BOARD_TYPES, data['priority'] in BOARD_PRIORITIES,
+        data['message_type'] != '住民への情報発信' or bool(data['target_audience'])
+    )
+    if data['expiry_date'] and data['expiry_time']:
+        try:
+            datetime.fromisoformat(f"{data['expiry_date']}T{data['expiry_time']}")
+        except ValueError:
+            return False
+    return all(required)
+
+
+def store_instruction(data, existing=None, draft=False):
+    expiry = f"{data['expiry_date']}T{data['expiry_time']}" if data['expiry_date'] and data['expiry_time'] else None
+    timestamp = board_now().isoformat(timespec='minutes')
+    item = existing or {'id': next_instruction_id()}
+    item.update({
+        **data, 'display_until': expiry,
+        'visibility_status': '下書き' if draft else '公開済み', 'is_draft': draft,
+        'state': '未確認' if data['message_type'] == '職員への指示' else '発信済み',
+        'published_at': item.get('published_at') if draft and existing else (None if draft else timestamp),
+        'created_at': item.get('created_at', timestamp), 'updated_at': timestamp,
+        'target': '住民' if data['message_type'] == '住民への情報発信' else '職員'
+    })
+    if not draft and existing:
+        item['published_at'] = timestamp
+    if existing is None:
+        instructions.append(item)
+    return item
 # ────────────────────────────────
 
 # ────────────────────────────────
@@ -357,7 +465,8 @@ def get_weather_warnings():
             "area_name": AREA_NAME,
             "warnings": warnings,
             "report_time": format_report_time(report_datetime),
-            "last_fetch_time": get_japan_time()
+            "last_fetch_time": get_japan_time(),
+            "error": False
         }
 
     except Exception:
@@ -533,11 +642,50 @@ def all_shelters():
 
 
 # 指示ボード：住民向けの指示を一覧で確認する
-@app.route('/board')
+@app.route('/board', methods=['GET', 'POST'])
 @login_required
 def board():
-    resident_instructions = [i for i in instructions if i.get('target') == '住民']
-    return render_template('board.html', instructions=resident_instructions)
+    form_data = {key: '' for key in ('disaster', 'content', 'shelter_id', 'message_type', 'priority', 'expiry_date', 'expiry_time')}
+    form_data['target_audience'] = []
+    error = None
+    edit_id = request.args.get('edit_id', '').strip()
+    editing = find_instruction(edit_id) if edit_id else None
+    if request.method == 'POST':
+        form_data = board_form_data(request.form)
+        action = request.form.get('action', 'publish')
+        edit_id = request.form.get('edit_id', '').strip()
+        editing = find_instruction(edit_id) if edit_id else None
+        if edit_id and editing is None:
+            error = '編集対象の指示・発信が見つかりません。'
+        elif action == 'publish' and not board_validation(form_data):
+            error = '選択していない必須項目があります。'
+        else:
+            store_instruction(form_data, editing, draft=action == 'draft')
+            save_instructions()
+            return redirect(url_for('board'))
+    elif editing:
+        form_data = {
+            **editing,
+            'expiry_date': (editing.get('display_until') or 'T').split('T')[0] if editing.get('display_until') else '',
+            'expiry_time': (editing.get('display_until') or 'T').split('T')[1] if editing.get('display_until') else '',
+            'target_audience': editing.get('target_audience', [])
+        }
+    return render_template(
+        'board.html', instructions=[item for item in instructions if is_published_instruction(item)],
+        drafts=[item for item in instructions if not is_published_instruction(item)], counts=board_counts(),
+        shelters=board_shelter_options(), form_data=form_data, edit_id=edit_id, error=error,
+        disasters=BOARD_DISASTERS, message_types=BOARD_TYPES, targets=BOARD_TARGETS, priorities=BOARD_PRIORITIES
+    )
+
+
+@app.route('/board/delete/<int:instruction_id>', methods=['POST'])
+@login_required
+def board_delete(instruction_id):
+    item = find_instruction(instruction_id)
+    if item:
+        instructions.remove(item)
+        save_instructions()
+    return redirect(url_for('board'))
 
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
@@ -597,6 +745,19 @@ def get_shelters():
 def api_weather_warnings():
     """気象警報・注意報をJSON形式で返すAPI"""
     return jsonify(get_weather_warnings())
+
+
+@app.route('/api/notifications/read', methods=['POST'])
+def mark_resident_notifications_read():
+    """住民向け通知を既読にして保存する"""
+    changed = False
+    for instruction in instructions:
+        if instruction.get('target') == '住民' and not instruction.get('read', False):
+            instruction['read'] = True
+            changed = True
+    if changed:
+        save_instructions()
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
